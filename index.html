@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zola Budget Hub</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Offline budget hub</p>
+        <h1>Zola Budget Hub</h1>
+      </div>
+      <div class="toolbar">
+        <label class="field compact">
+          <span>Budget cycle</span>
+          <select id="monthSelect"></select>
+        </label>
+        <label class="field compact">
+          <span>Jump to date</span>
+          <input id="jumpDate" type="date" value="2026-06-25">
+        </label>
+        <label class="field compact">
+          <span>Color theme</span>
+          <select id="themeSelect">
+            <option value="sage">Sage</option>
+            <option value="ocean">Ocean</option>
+            <option value="berry">Berry</option>
+            <option value="graphite">Graphite</option>
+          </select>
+        </label>
+        <button id="exportBtn" class="ghost">Export JSON</button>
+        <label class="ghost file-label">
+          Import JSON
+          <input id="importInput" type="file" accept="application/json">
+        </label>
+        <button id="resetBtn" class="danger">Reset Seed</button>
+      </div>
+    </header>
+
+    <main>
+      <nav class="tabs" aria-label="Budget sections">
+        <button class="tab active" data-tab="dashboard" type="button">Dashboard</button>
+        <button class="tab" data-tab="envelopes" type="button">Sinking Funds + Cash Envelopes</button>
+        <button class="tab" data-tab="wallet" type="button">Wallet Cash</button>
+        <button class="tab" data-tab="loans" type="button">Loans + Tracked Balances</button>
+      </nav>
+
+      <section class="cycle-note" id="cycleNote"></section>
+
+      <section class="tab-panel active" data-panel="dashboard">
+        <section class="kpi-grid" id="kpiGrid"></section>
+
+        <section class="layout">
+          <div class="panel wide">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Accounts</p>
+                <h2>Current Balances</h2>
+              </div>
+              <button id="addAccountBtn" class="small">Add Account</button>
+            </div>
+            <div id="accountsGrid" class="accounts-grid"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Rollover</p>
+                <h2>Cash Flow</h2>
+              </div>
+            </div>
+            <div id="cashFlowBars" class="bars"></div>
+          </div>
+        </section>
+
+        <section class="layout">
+          <div class="panel wide">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Budget</p>
+                <h2>Budget vs Actual</h2>
+              </div>
+              <button id="copyBudgetBtn" class="small">Copy Prior Month</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Budget</th>
+                    <th>Actual</th>
+                    <th>Remaining</th>
+                    <th>Used</th>
+                  </tr>
+                </thead>
+                <tbody id="budgetBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Categories</p>
+                <h2>Spending Mix</h2>
+              </div>
+            </div>
+            <div id="categoryBars" class="bars"></div>
+          </div>
+        </section>
+
+        <section class="layout">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">New Entry</p>
+                <h2 id="transactionFormTitle">Add Transaction</h2>
+              </div>
+            </div>
+            <form id="transactionForm" class="form-grid">
+              <input name="id" type="hidden">
+              <label class="field">
+                <span>Date</span>
+                <input name="date" type="date" required>
+              </label>
+              <label class="field">
+                <span>Account</span>
+                <select name="account" required></select>
+              </label>
+              <label class="field transfer-only" hidden>
+                <span>Transfer To</span>
+                <select name="toAccount"></select>
+              </label>
+              <label class="field">
+                <span>Category</span>
+                <select name="category" required>
+                  <option>Income</option>
+                  <option>Bills</option>
+                  <option>Expenses</option>
+                  <option>Savings</option>
+                  <option>Debt</option>
+                  <option>Transfer</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Subcategory</span>
+                <input name="subcategory" list="subcategoryList" placeholder="Groceries, Paycheck, Lucelec">
+                <datalist id="subcategoryList"></datalist>
+              </label>
+              <label class="field">
+                <span>Amount</span>
+                <input name="amount" type="number" min="0" step="0.01" required>
+              </label>
+              <label class="field">
+                <span>Description</span>
+                <input name="description" placeholder="Optional note">
+              </label>
+              <div class="form-actions">
+                <button id="transactionSubmit" type="submit">Add Transaction</button>
+                <button id="cancelEditBtn" class="ghost" type="button" hidden>Cancel Edit</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel wide">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Ledger</p>
+                <h2>Transactions In Selected Cycle</h2>
+              </div>
+            <label class="field compact">
+              <span>Search</span>
+              <input id="searchInput" placeholder="Category, note, amount">
+            </label>
+            <label class="field compact">
+              <span>Category</span>
+              <select id="ledgerCategoryFilter"></select>
+            </label>
+            <label class="field compact">
+              <span>Subcategory</span>
+              <select id="ledgerSubcategoryFilter"></select>
+            </label>
+          </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Account</th>
+                    <th>Category</th>
+                    <th>Subcategory</th>
+                    <th>Description</th>
+                    <th class="num">Amount</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="transactionBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-panel" data-panel="envelopes">
+        <section class="layout">
+          <div class="panel wide">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Buckets</p>
+                <h2>Sinking Funds + Cash Envelopes</h2>
+              </div>
+              <button id="addEnvelopeBtn" class="small">Add Envelope</button>
+            </div>
+            <div id="envelopesGrid" class="accounts-grid"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Envelope Flow</p>
+                <h2>Selected Cycle</h2>
+              </div>
+            </div>
+            <div id="envelopeBars" class="bars"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-panel" data-panel="loans">
+        <section class="layout">
+          <div class="panel wide">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Debt</p>
+                <h2>Loan Remaining Balances</h2>
+              </div>
+              <button id="addLoanBtn" class="small">Add Loan</button>
+            </div>
+            <div id="loansGrid" class="accounts-grid"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Tracked Inside Deposits</p>
+                <h2>Insurance + Visions</h2>
+              </div>
+            </div>
+            <div id="trackedBalances" class="bars"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-panel" data-panel="wallet">
+        <section class="layout">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Wallet Cash</p>
+                <h2>Quick Wallet Expense</h2>
+              </div>
+            </div>
+            <form id="walletForm" class="form-grid">
+              <label class="field">
+                <span>Date</span>
+                <input name="date" type="date" required>
+              </label>
+              <label class="field">
+                <span>Subcategory</span>
+                <input name="subcategory" list="subcategoryList" placeholder="Bus, Lunch, Groceries" required>
+              </label>
+              <label class="field">
+                <span>Amount</span>
+                <input name="amount" type="number" min="0" step="0.01" required>
+              </label>
+              <label class="field">
+                <span>Description</span>
+                <input name="description" placeholder="Optional note">
+              </label>
+              <button type="submit">Post Wallet Expense</button>
+            </form>
+          </div>
+          <div class="panel wide">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Wallet Ledger</p>
+                <h2 id="walletBalanceTitle">Wallet Cash</h2>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Subcategory</th>
+                    <th>Description</th>
+                    <th class="num">Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="walletBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="budget-data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
